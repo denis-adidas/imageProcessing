@@ -39,6 +39,32 @@ bool bmp::saveImage(const std::string &filename, std::vector<uint8_t> data) {
 
     return true;
 }
+std::vector<uint8_t> bmp::convertRGBtoYCbCr()   {
+        std::vector<uint8_t> ycbcrData;
+        ycbcrData.reserve(imageData.size());
+
+        for (size_t i = 0; i < imageData.size(); i += 3) {
+            uint8_t r = imageData[i];
+            uint8_t g = imageData[i + 1];
+            uint8_t b = imageData[i + 2];
+
+
+            uint8_t y = static_cast<uint8_t>(0.299 * r + 0.587 * g + 0.114 * b);
+            uint8_t cb = static_cast<uint8_t>(0.5643 * (b - y) + 128);
+            uint8_t cr = static_cast<uint8_t>(0.7132 * (r - y) + 128);
+
+
+            ycbcrData.push_back(y);
+            ycbcrData.push_back(cb);
+            ycbcrData.push_back(cr);
+        }
+
+
+        saveImage("../data/YCbCr_component.bmp", ycbcrData);
+    return ycbcrData;
+}
+
+
 void bmp::print_header() const {
     std::cout << std::hex <<
         fileHeader.bf_type << " " <<
@@ -76,6 +102,33 @@ std::vector<uint8_t> bmp::saveFileByComponent(const char &mod) {
             }
         break;
         case 'b':
+            for (size_t i {}; i < tmp_data.size(); i += 3) {
+                tmp_data[i + 1] &= 0x00;
+                tmp_data[i + 2] &= 0x00;
+            }
+        break;
+        default:
+            break;
+    }
+    saveImage("../data/image_by_" + std::string(1, mod) + "_component.bmp", tmp_data);
+    return tmp_data;
+}
+std::vector<uint8_t> bmp::saveFileByComponentYCbCr(const char &mod, std::vector<uint8_t> data) {
+    std::vector tmp_data{data};
+    switch (mod) {
+        case 'Y':
+            for (size_t i {}; i < tmp_data.size(); i += 3) {
+                tmp_data[i    ] = 0x00;
+                tmp_data[i + 1] = 0x00;
+            }
+        break;
+        case 'B':
+            for (size_t i {}; i < tmp_data.size(); i += 3) {
+                tmp_data[i    ] &= 0x00;
+                tmp_data[i + 2] &= 0x00;
+            }
+        break;
+        case 'R':
             for (size_t i {}; i < tmp_data.size(); i += 3) {
                 tmp_data[i + 1] &= 0x00;
                 tmp_data[i + 2] &= 0x00;

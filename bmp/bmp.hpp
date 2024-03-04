@@ -36,8 +36,11 @@ public:
     bmp()= default;
     explicit bmp(const std::string& fileName);
     bool saveImage(const std::string &filename, std::vector<uint8_t> data);
+    std::vector<uint8_t> convertRGBtoYCbCr();
     std::vector<uint8_t> saveFileByComponent(const char& mod);
+    std::vector<uint8_t> saveFileByComponentYCbCr(const char &mod, std::vector<uint8_t> data);
     void print_header() const;
+
     std::vector<uint8_t> getData() {
         return imageData;
     };

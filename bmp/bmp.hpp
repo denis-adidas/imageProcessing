@@ -31,6 +31,7 @@ class bmp {
         uint32_t bi_colors_important;
     } infoHeader {};
 #pragma pack(pop)
+    std::vector<uint8_t> palette;
     std::vector<uint8_t> imageData;
 public:
     bmp()= default;
@@ -39,6 +40,8 @@ public:
     std::vector<uint8_t> convertRGBtoYCbCr();
     std::vector<uint8_t> saveFileByComponent(const char& mod);
     std::vector<uint8_t> saveFileByComponentYCbCr(const char &mod, std::vector<uint8_t> data);
+    void rotate(int rotateCount);
+
     void print_header() const;
 
     std::vector<uint8_t> getData() {

@@ -6,6 +6,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <utility>
 
 bmp::bmp(const std::string &fileName) {
     std::ifstream file(fileName, std::ios::binary);
@@ -13,17 +14,24 @@ bmp::bmp(const std::string &fileName) {
         std::cerr << "Unable to open file for reading." << std::endl;
         return;
     }
-    file.read(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
-    if (fileHeader.bf_type != 0x4D42) {
-        std::cerr << "Unknown file's format" << std::endl;
-        return;
+    if (file) {
+        file.read(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
+        if (fileHeader.bf_type != 0x4D42) {
+            std::cerr << "Unknown file's format" << std::endl;
+            return;
+        }
+        file.read(reinterpret_cast<char*>(&infoHeader), sizeof(infoHeader));
+
+        file.seekg(sizeof(infoHeader) + sizeof(fileHeader), std::ios::beg);
+        palette.resize(fileHeader.bf_off_bits - sizeof(infoHeader) - sizeof(fileHeader));
+        file.read(reinterpret_cast<char*>(palette.data()), palette.size());
+
+
+        imageData.resize(infoHeader.bi_size_image);
+        file.read(reinterpret_cast<char*>(imageData.data()), imageData.size());
+
+        std::cout << imageData[0] << std::endl;
     }
-    file.read(reinterpret_cast<char*>(&infoHeader), sizeof(infoHeader));
-
-    imageData.resize(infoHeader.bi_size_image + fileHeader.bf_off_bits);
-    file.read(reinterpret_cast<char*>(imageData.data()), imageData.size());
-    // std::cout << imageData.size() << std::endl;
-
     file.close();
 }
 
@@ -35,7 +43,8 @@ bool bmp::saveImage(const std::string &filename, std::vector<uint8_t> data) {
     }
     file.write(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
     file.write(reinterpret_cast<char*>(&infoHeader), sizeof(infoHeader));
-    file.write(reinterpret_cast<char*>(data.data()), data.size());
+    file.write(reinterpret_cast<char*>(palette.data()), palette.size());
+    file.write(reinterpret_cast<char*>((data).data()), data.size());
 
     return true;
 }
@@ -73,7 +82,7 @@ void bmp::print_header() const {
         fileHeader.bf_reserved2 << " " <<
         fileHeader.bf_off_bits << " " << std::endl;
 
-    std::cout << std::hex <<
+    std::cout  <<
         infoHeader.bi_size << " " <<
         infoHeader.bi_width << " " <<
         infoHeader.bi_height << " " <<
@@ -110,33 +119,32 @@ std::vector<uint8_t> bmp::saveFileByComponent(const char &mod) {
         default:
             break;
     }
+
     saveImage("../data/image_by_" + std::string(1, mod) + "_component.bmp", tmp_data);
     return tmp_data;
 }
-std::vector<uint8_t> bmp::saveFileByComponentYCbCr(const char &mod, std::vector<uint8_t> data) {
-    std::vector tmp_data{data};
-    switch (mod) {
-        case 'Y':
-            for (size_t i {}; i < tmp_data.size(); i += 3) {
-                tmp_data[i    ] = 0x00;
-                tmp_data[i + 1] = 0x00;
+
+void bmp::rotate(int rotateCount) {
+    auto height = infoHeader.bi_height;
+    auto width = infoHeader.bi_width;
+    const size_t bytesPerPixel = infoHeader.bi_bit_count / 8;
+
+    std::vector<uint8_t> tmp_data(imageData.size());
+
+    for (int j = 0; j < width; ++j) {
+        for (int i = height - 1; i >= 0; --i) {
+            size_t newIndex = (j * height + (height - 1 - i)) * bytesPerPixel;
+            size_t oldIndex = (i * width + j) * bytesPerPixel;
+
+            for (size_t k = 0; k < bytesPerPixel; ++k) {
+                tmp_data[newIndex + k] = imageData[oldIndex + k];
             }
-        break;
-        case 'B':
-            for (size_t i {}; i < tmp_data.size(); i += 3) {
-                tmp_data[i    ] &= 0x00;
-                tmp_data[i + 2] &= 0x00;
-            }
-        break;
-        case 'R':
-            for (size_t i {}; i < tmp_data.size(); i += 3) {
-                tmp_data[i + 1] &= 0x00;
-                tmp_data[i + 2] &= 0x00;
-            }
-        break;
-        default:
-            break;
+        }
     }
-    saveImage("../data/image_by_" + std::string(1, mod) + "_component.bmp", tmp_data);
-    return tmp_data;
+
+    // Обновляем высоту и ширину после поворота
+    std::swap(infoHeader.bi_width, infoHeader.bi_height);
+
+    // Обновляем данные изображения
+    imageData = tmp_data;
 }

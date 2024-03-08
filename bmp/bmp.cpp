@@ -49,8 +49,14 @@ bool bmp::saveImage(const std::string &filename, std::vector<uint8_t> data) {
     return true;
 }
 std::vector<uint8_t> bmp::convertRGBtoYCbCr()   {
+        std::vector<uint8_t> YData;
+        std::vector<uint8_t> CbData;
+        std::vector<uint8_t> CrData;
         std::vector<uint8_t> ycbcrData;
-        ycbcrData.reserve(imageData.size());
+
+        YData.reserve(imageData.size());
+        CbData.reserve(imageData.size());
+        CrData.reserve(imageData.size());
 
         for (size_t i = 0; i < imageData.size(); i += 3) {
             uint8_t r = imageData[i];
@@ -63,15 +69,47 @@ std::vector<uint8_t> bmp::convertRGBtoYCbCr()   {
             uint8_t cr = static_cast<uint8_t>(0.7132 * (r - y) + 128);
 
 
-            ycbcrData.push_back(y);
-            ycbcrData.push_back(cb);
-            ycbcrData.push_back(cr);
+            YData.emplace_back(y);
+            YData.emplace_back(y);
+            YData.emplace_back(y);
+            ycbcrData.emplace_back(y);
+            CbData.emplace_back(cb);
+            CbData.emplace_back(cb);
+            CbData.emplace_back(cb);
+            ycbcrData.emplace_back(cb);
+            CrData.emplace_back(cr);
+            CrData.emplace_back(cr);
+            CrData.emplace_back(cr);
+            ycbcrData.emplace_back(cr);
         }
 
-
-        saveImage("../data/YCbCr_component.bmp", ycbcrData);
+        saveImage("../data/Y_component.bmp", YData);
+        saveImage("../data/Cb_component.bmp", CbData);
+        saveImage("../data/Cr_component.bmp", CrData);
     return ycbcrData;
 }
+
+std::vector<uint8_t> bmp::convertYCbCrtoRGB(const std::vector<uint8_t>& data) {
+    std::vector<uint8_t> RGBImage;
+    RGBImage.reserve(data.size());
+
+    for (size_t i {}; i < RGBImage.size(); ++i) {
+        uint8_t Y = data[i];
+        uint8_t Cb = data[i + 1];
+        uint8_t Cr = data[i + 2];
+
+        uint8_t b = static_cast<uint8_t>(Y + 1.772 * (Cb - 128));
+        uint8_t r = static_cast<uint8_t>(Y + 1.402 * (Cr - 128));
+        uint8_t g = static_cast<uint8_t>(Y - 0.714 * (Cr - 128) - 0.334 * (Cb - 128));
+
+        RGBImage.emplace_back(r);
+        RGBImage.emplace_back(g);
+        RGBImage.emplace_back(b);
+    }
+    saveImage("../data/restoreImage.bmp", data);
+    return data;
+}
+
 
 
 void bmp::print_header() const {
@@ -142,9 +180,7 @@ void bmp::rotate(int rotateCount) {
         }
     }
 
-    // Обновляем высоту и ширину после поворота
     std::swap(infoHeader.bi_width, infoHeader.bi_height);
 
-    // Обновляем данные изображения
     imageData = tmp_data;
 }

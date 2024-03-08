@@ -98,9 +98,9 @@ std::vector<uint8_t> bmp::convertYCbCrtoRGB(const std::vector<uint8_t>& data) {
         uint8_t Cb = data[i + 1];
         uint8_t Cr = data[i + 2];
 
-        uint8_t b = static_cast<uint8_t>(Y + 1.772 * (Cb - 128));
-        uint8_t r = static_cast<uint8_t>(Y + 1.402 * (Cr - 128));
-        uint8_t g = static_cast<uint8_t>(Y - 0.714 * (Cr - 128) - 0.334 * (Cb - 128));
+        uint8_t b = static_cast<uint8_t>(Sat((Y + 1.772 * (Cb - 128)), 0, 255));
+        uint8_t r = static_cast<uint8_t>(Sat((Y + 1.402 * (Cr - 128)), 0, 255));
+        uint8_t g = static_cast<uint8_t>(Sat((Y - 0.714 * (Cr - 128) - 0.334 * (Cb - 128)), 0, 255));
 
         RGBImage.emplace_back(r);
         RGBImage.emplace_back(g);

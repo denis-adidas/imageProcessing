@@ -41,7 +41,6 @@ public:
     std::vector<uint8_t> saveFileByComponent(const char& mod);
     std::vector<uint8_t> convertYCbCrtoRGB(const std::vector<uint8_t>& data);
     void rotate(int rotateCount);
-
     void print_header() const;
 
     std::vector<uint8_t> getData() {
@@ -53,6 +52,10 @@ public:
     BMPInfoHeader getInfoHeader() {
         return infoHeader;
     }
+private:
+    uint8_t Sat(uint8_t x, uint8_t xmin, uint8_t xmax) {
+        return (x < xmin) ? xmin : (x > xmax) ? xmax : x;
+    };
 };
 
 #endif

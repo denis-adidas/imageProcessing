@@ -73,3 +73,7 @@
 619	735	7316038410520999	imageAnalysis1.exe	29c9b2f46d6431ee
 11	662	7316039151185812	CMakeFiles/imageAnalysis1.dir/bmp/bmp.cpp.obj	794f6d1c9a7db4d2
 663	776	7316039152291648	imageAnalysis1.exe	29c9b2f46d6431ee
+22	602	7316042694905897	CMakeFiles/imageAnalysis1.dir/bmpAnalysis/bmpAnalysis.cpp.obj	fbb2a5d6f99fab31
+11	732	7316042696207007	CMakeFiles/imageAnalysis1.dir/main.cpp.obj	d16965dfa8452706
+17	782	7316042696710507	CMakeFiles/imageAnalysis1.dir/bmp/bmp.cpp.obj	794f6d1c9a7db4d2
+782	923	7316042698085776	imageAnalysis1.exe	29c9b2f46d6431ee

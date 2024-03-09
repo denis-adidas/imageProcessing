@@ -55,12 +55,6 @@ build CMakeFiles/imageAnalysis1.dir/main.cpp.obj: CXX_COMPILER__imageAnalysis1_u
   OBJECT_DIR = CMakeFiles\imageAnalysis1.dir
   OBJECT_FILE_DIR = CMakeFiles\imageAnalysis1.dir
 
-build CMakeFiles/imageAnalysis1.dir/util.cpp.obj: CXX_COMPILER__imageAnalysis1_unscanned_Debug D$:/CLion_projects/crypto/imageAnalysis1/util.cpp || cmake_object_order_depends_target_imageAnalysis1
-  DEP_FILE = CMakeFiles\imageAnalysis1.dir\util.cpp.obj.d
-  FLAGS = -g -fdiagnostics-color=always
-  OBJECT_DIR = CMakeFiles\imageAnalysis1.dir
-  OBJECT_FILE_DIR = CMakeFiles\imageAnalysis1.dir
-
 build CMakeFiles/imageAnalysis1.dir/bmp/bmp.cpp.obj: CXX_COMPILER__imageAnalysis1_unscanned_Debug D$:/CLion_projects/crypto/imageAnalysis1/bmp/bmp.cpp || cmake_object_order_depends_target_imageAnalysis1
   DEP_FILE = CMakeFiles\imageAnalysis1.dir\bmp\bmp.cpp.obj.d
   FLAGS = -g -fdiagnostics-color=always
@@ -81,7 +75,7 @@ build CMakeFiles/imageAnalysis1.dir/bmpAnalysis/bmpAnalysis.cpp.obj: CXX_COMPILE
 #############################################
 # Link the executable imageAnalysis1.exe
 
-build imageAnalysis1.exe: CXX_EXECUTABLE_LINKER__imageAnalysis1_Debug CMakeFiles/imageAnalysis1.dir/main.cpp.obj CMakeFiles/imageAnalysis1.dir/util.cpp.obj CMakeFiles/imageAnalysis1.dir/bmp/bmp.cpp.obj CMakeFiles/imageAnalysis1.dir/bmpAnalysis/bmpAnalysis.cpp.obj
+build imageAnalysis1.exe: CXX_EXECUTABLE_LINKER__imageAnalysis1_Debug CMakeFiles/imageAnalysis1.dir/main.cpp.obj CMakeFiles/imageAnalysis1.dir/bmp/bmp.cpp.obj CMakeFiles/imageAnalysis1.dir/bmpAnalysis/bmpAnalysis.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\imageAnalysis1.dir

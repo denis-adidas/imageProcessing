@@ -13,7 +13,6 @@ double expectedValue(bmp& image, char mod) {
         for (int j = 0; j < W; ++j) {
             size_t pixelOffset = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
 
-
             uint8_t componentValue;
             switch (mod) {
                 case 'r':
@@ -48,7 +47,6 @@ double sigma(double expVal, bmp& image, char mod) {
         for (int j = 0; j < W; ++j) {
             size_t pixelOffset = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
 
-
             uint8_t componentValue;
             switch (mod) {
                 case 'r':
@@ -69,10 +67,18 @@ double sigma(double expVal, bmp& image, char mod) {
     sigma = std::sqrt((1.0 / ((W * H) - 1)) * std::pow(sum, 2));
     return sigma;
 }
-double countCorel(double expValA, double expValB, double sigmaA, double sigmaB, bmp& image, char mod, char mod2) {
+double countCorel(bmp& image, char mod, char mod2) {
     double r;
     double mul;
     double M;
+
+    double expValA {}, expValB {}, sigmaA {}, sigmaB {};
+
+    expValA = expectedValue(image, mod);
+    expValB = expectedValue(image, mod2);
+
+    sigmaA = (expValA, image, mod);
+    sigmaB = (expValB, image, mod);
 
     const size_t bytesPerPixel = image.getInfoHeader().bi_bit_count / 8;
     auto H = image.getInfoHeader().bi_height;
@@ -80,6 +86,8 @@ double countCorel(double expValA, double expValB, double sigmaA, double sigmaB, 
 
     double sumA = 0;
     double sumB = 0;
+
+    mul = 0;
 
     for (int i = 0; i < H; ++i) {
         for (int j = 0; j < W; ++j) {
@@ -100,7 +108,7 @@ double countCorel(double expValA, double expValB, double sigmaA, double sigmaB, 
                 default:
                     return 0.0;
             }
-            sumA += static_cast<double>(componentValue);
+            sumA = static_cast<double>(componentValue);
             switch (mod2) {
                 case 'r':
                     componentValue = image.getData()[pixelOffset] - expValB;
@@ -114,12 +122,148 @@ double countCorel(double expValA, double expValB, double sigmaA, double sigmaB, 
                 default:
                     return 0.0;
             }
-            sumB += static_cast<double>(componentValue);
+            sumB = static_cast<double>(componentValue);
 
-            mul = sumA*sumB;
+            mul += sumA * sumB;
         }
     }
     M = (1.0 / (W * H)) * mul;
     r = M / (sigmaA * sigmaB);
+    return r;
+}
+
+double autoCorel(bmp &image, char mod, size_t x, size_t y) {
+    double expVal1, expVal2;
+    double sigma1, sigma2;
+    double r;
+    const size_t bytesPerPixel = image.getInfoHeader().bi_bit_count / 8;
+    auto H = image.getInfoHeader().bi_height;
+    auto W = image.getInfoHeader().bi_width;
+
+    uint8_t bitShift;
+    switch (mod) {
+        case 'r':
+            bitShift = 0;
+        break;
+        case 'g':
+            bitShift = 1;
+        break;
+        case 'b':
+            bitShift = 2;
+        break;
+        default:
+            return 0.0;
+    }
+
+    double sum = 0;
+
+    for (int i = 1; i < H - y; ++i) {
+        for (int j = 1; j < W - x; ++j) {
+            size_t pixelOffset = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
+            uint8_t componentValue = image.getData()[pixelOffset + bitShift];
+            sum += static_cast<double>(componentValue);
+        }
+    }
+    expVal1 = (1.0 / (W * H)) * sum;
+
+    sum = 0.0;
+    for (int i = y + 1;  i < H; ++i) {
+        for (int j = x + 1; j < W - x; ++j) {
+            size_t pixelOffset = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
+            uint8_t componentValue = image.getData()[pixelOffset + bitShift];
+            sum += static_cast<double>(componentValue);
+        }
+    }
+    expVal2 = (1.0 / (W * H)) * sum;
+
+    sum = 0.0;
+    for (int i = 1; i < H - y; ++i) {
+        for (int j = 1; j < W - x; ++j) {
+            size_t pixelOffset = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
+            uint8_t componentValue = image.getData()[pixelOffset + bitShift] - expVal1;
+            sum += static_cast<double>(componentValue);
+        }
+    }
+    sigma1 = std::sqrt((1.0 / ((W * H) - 1)) * std::pow(sum, 2));
+
+    sum = 0.0;
+    for (int i = y + 1;  i < H; ++i) {
+        for (int j = x + 1; j < W - x; ++j) {
+            size_t pixelOffset = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
+            uint8_t componentValue = image.getData()[pixelOffset + bitShift] - expVal2;
+            sum += static_cast<double>(componentValue);
+        }
+    }
+    sigma2 = std::sqrt((1.0 / ((W * H) - 1)) * std::pow(sum, 2));
+
+    sum = 0.0;
+    for (int i = 1; i < H - y; ++i) {
+        for (int j = 1; j < W - x; ++j) {
+            size_t pixelOffset = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
+            uint8_t componentValue = image.getData()[pixelOffset + bitShift] - expVal1;
+            sum += static_cast<double>(componentValue);
+        }
+    }
+}
+
+
+double autoCorel2(bmp& image, char mod, char mod2, size_t x, size_t y) {
+    double r;
+    double M;
+
+    double expValA = expectedValue(image, mod);
+    double expValB = expectedValue(image, mod2);
+
+    double sigmaA = sigma(expValA, image, mod);
+    double sigmaB = sigma(expValB, image, mod2);
+
+    const size_t bytesPerPixel = image.getInfoHeader().bi_bit_count / 8;
+    auto H = image.getInfoHeader().bi_height;
+    auto W = image.getInfoHeader().bi_width;
+
+    double sumA = 0;
+    double sumB = 0;
+    double mul1 = 0, mul2 = 0;
+
+    for (int i = 0; i < H - y; ++i) {
+        for (int j = 0; j < W - x; ++j) {
+            size_t pixelOffsetA = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
+            size_t pixelOffsetB = ((i + y) * image.getInfoHeader().bi_width + (j + x)) * bytesPerPixel;
+
+            switch (mod) {
+                case 'r':
+                    sumA = image.getData()[pixelOffsetA] - expValA;
+                break;
+                case 'g':
+                    sumA = image.getData()[pixelOffsetA + 1] - expValA;
+                break;
+                case 'b':
+                    sumA = image.getData()[pixelOffsetA + 2] - expValA;
+                break;
+                default:
+                    return 0.0;
+            }
+
+            switch (mod2) {
+                case 'r':
+                    sumB = image.getData()[pixelOffsetB] - expValB;
+                break;
+                case 'g':
+                    sumB = image.getData()[pixelOffsetB + 1] - expValB;
+                break;
+                case 'b':
+                    sumB = image.getData()[pixelOffsetB + 2] - expValB;
+                break;
+                default:
+                    return 0.0;
+            }
+
+            mul1 += sumA * sumB;
+        }
+    }
+
+    M = (1.0 / ((W - x) * (H - y))) * mul1;
+    r = M / (sigmaA * sigmaB);
+
     return r;
 }

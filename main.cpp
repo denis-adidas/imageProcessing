@@ -9,10 +9,10 @@ int main() {
     auto test = bmp(R"(E:\Download\bmp-main\img\kodim232.bmp)");
     test.print_header();
 
-    test.saveFileByComponent('r');
-    test.rotate(1);
-    auto temp = test.convertRGBtoYCbCr();
-    test.convertYCbCrtoRGB(temp);
+    auto temp = autoCorel(test, 'r', 'g', 5, 5);
+    std::cout << temp << std::endl;
+
+
 
 
 

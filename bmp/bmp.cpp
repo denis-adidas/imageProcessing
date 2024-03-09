@@ -30,7 +30,7 @@ bmp::bmp(const std::string &fileName) {
         imageData.resize(infoHeader.bi_size_image);
         file.read(reinterpret_cast<char*>(imageData.data()), imageData.size());
 
-        std::cout << imageData[0] << std::endl;
+        // std::cout << imageData[0] << std::endl;
     }
     file.close();
 }

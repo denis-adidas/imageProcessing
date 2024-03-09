@@ -7,7 +7,9 @@
 
 double expectedValue(bmp& image, char mod);
 double sigma(double expVal, bmp& image, char mod);
-double countCorel(double expValA, double expValB, double sigmaA, double sigmaB, bmp& image, char mod, char mod2);
+double countCorel(bmp& image, char mod, char mod2);
+double autoCorel(bmp& image, char mod, char mod2, size_t x, size_t y);
+double autoCorel2(bmp& image, char mod, char mod2, size_t x, size_t y);
 
 
 

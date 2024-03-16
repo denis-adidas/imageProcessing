@@ -1,5 +1,7 @@
 #include "bmpAnalysis.hpp"
 
+#include <valarray>
+
 
 double expectedValue(bmp& image, char mod) {
     double M;
@@ -197,6 +199,7 @@ double autoCorel(bmp &image, char mod, size_t x, size_t y) {
     sigma2 = std::sqrt((1.0 / ((W * H) - 1)) * std::pow(sum, 2));
 
     sum = 0.0;
+    double sum2 = 0.0;
     for (int i = 1; i < H - y; ++i) {
         for (int j = 1; j < W - x; ++j) {
             size_t pixelOffset = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
@@ -204,66 +207,50 @@ double autoCorel(bmp &image, char mod, size_t x, size_t y) {
             sum += static_cast<double>(componentValue);
         }
     }
-}
-
-
-double autoCorel2(bmp& image, char mod, char mod2, size_t x, size_t y) {
-    double r;
-    double M;
-
-    double expValA = expectedValue(image, mod);
-    double expValB = expectedValue(image, mod2);
-
-    double sigmaA = sigma(expValA, image, mod);
-    double sigmaB = sigma(expValB, image, mod2);
-
-    const size_t bytesPerPixel = image.getInfoHeader().bi_bit_count / 8;
-    auto H = image.getInfoHeader().bi_height;
-    auto W = image.getInfoHeader().bi_width;
-
-    double sumA = 0;
-    double sumB = 0;
-    double mul1 = 0, mul2 = 0;
-
-    for (int i = 0; i < H - y; ++i) {
-        for (int j = 0; j < W - x; ++j) {
-            size_t pixelOffsetA = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
-            size_t pixelOffsetB = ((i + y) * image.getInfoHeader().bi_width + (j + x)) * bytesPerPixel;
-
-            switch (mod) {
-                case 'r':
-                    sumA = image.getData()[pixelOffsetA] - expValA;
-                break;
-                case 'g':
-                    sumA = image.getData()[pixelOffsetA + 1] - expValA;
-                break;
-                case 'b':
-                    sumA = image.getData()[pixelOffsetA + 2] - expValA;
-                break;
-                default:
-                    return 0.0;
-            }
-
-            switch (mod2) {
-                case 'r':
-                    sumB = image.getData()[pixelOffsetB] - expValB;
-                break;
-                case 'g':
-                    sumB = image.getData()[pixelOffsetB + 1] - expValB;
-                break;
-                case 'b':
-                    sumB = image.getData()[pixelOffsetB + 2] - expValB;
-                break;
-                default:
-                    return 0.0;
-            }
-
-            mul1 += sumA * sumB;
+    for (int i = y + 1;  i < H; ++i) {
+        for (int j = x + 1; j < W - x; ++j) {
+            size_t pixelOffset = (i * image.getInfoHeader().bi_width + j) * bytesPerPixel;
+            uint8_t componentValue = image.getData()[pixelOffset + bitShift] - expVal1;
+            sum2 += static_cast<double>(componentValue);
         }
     }
-
-    M = (1.0 / ((W - x) * (H - y))) * mul1;
-    r = M / (sigmaA * sigmaB);
+    auto mul = sum * sum2;
+    auto M = (1.0 / (W * H)) * mul;
+    r = M / (sigma1 * sigma2);
 
     return r;
+}
+
+double PSNR(bmp& srcImage, bmp& destImage, char mod) {
+    if (srcImage.getData().size() != destImage.getData().size())
+        std::cerr << "Impossible to count PSNR, because images's sizes don't equal";
+
+    const size_t bytesPerPixel = srcImage.getInfoHeader().bi_bit_count / 8;
+
+    uint8_t bitShift;
+    switch (mod) {
+        case 'r':
+            bitShift = 0;
+        break;
+        case 'g':
+            bitShift = 1;
+        break;
+        case 'b':
+            bitShift = 2;
+        break;
+        default:
+            return 0.0;
+    }
+
+    double sum {};
+    for (int i = 0; i < srcImage.getInfoHeader().bi_height; ++i) {
+        for (int j = 0; j < srcImage.getInfoHeader().bi_width; ++j) {
+            size_t pixelOffset = (i * srcImage.getInfoHeader().bi_width + j) * bytesPerPixel;
+            sum += pow((srcImage.getData()[pixelOffset + bitShift] - destImage.getData()[pixelOffset + bitShift]), 2);
+        }
+    }
+    double result = 10 * std::log10(srcImage.getInfoHeader().bi_width * srcImage.getInfoHeader().bi_height * \
+        std::pow(std::pow(2, 8) - 1, 2) / sum);
+    return result;
+
 }

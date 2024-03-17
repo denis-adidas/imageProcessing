@@ -134,7 +134,7 @@ double countCorel(bmp& image, char mod, char mod2) {
     return r;
 }
 
-double autoCorel(bmp &image, char mod, size_t x, size_t y) {
+double autoCorel(bmp &image, char mod, const size_t x, const size_t y) {
     double expVal1, expVal2;
     double sigma1, sigma2;
     double r;
@@ -253,4 +253,75 @@ double PSNR(bmp& srcImage, bmp& destImage, char mod) {
         std::pow(std::pow(2, 8) - 1, 2) / sum);
     return result;
 
+}
+
+void decimateImagEven(bmp& image, int num) {
+    int originalWidth = image.getInfoHeader().bi_width;
+    int originalHeight = image.getInfoHeader().bi_height;
+
+    int newWidth = originalWidth / num;
+    int newHeight = originalHeight / num;
+
+    std::vector<uint8_t> decimatedImageData;
+
+    for (int y = 0; y < originalHeight; y += num) {
+        for (int x = 0; x < originalWidth; x += num) {
+            int index = (y * originalWidth + x) * 3;
+
+            decimatedImageData.push_back(image.getData()[index]);
+            decimatedImageData.push_back(image.getData()[index + 1]);
+            decimatedImageData.push_back(image.getData()[index + 2]);
+        }
+    }
+
+    image.setWidth(newWidth);
+    image.setHeight(newHeight);
+    auto tmp = image.getInfoHeader().bi_size_image;
+    image.setSize(newWidth * newHeight * 3);
+    image.setImageSize(image.getFileHeader().bf_size - tmp + image.getInfoHeader().bi_size_image);
+
+    image.setData(decimatedImageData);
+    image.saveImage("../data/decimationEven.bmp", decimatedImageData);
+}
+
+void decimateImageAvg(bmp& image) {
+    int originalWidth = image.getInfoHeader().bi_width;
+    int originalHeight = image.getInfoHeader().bi_height;
+
+    int newWidth = originalWidth / 2;
+    int newHeight = originalHeight / 2;
+
+    std::vector<uint8_t> decimatedImageData;
+
+    for (int y = 0; y < newHeight; ++y) {
+        for (int x = 0; x < newWidth; ++x) {
+            int index1 = ((2 * y) * originalWidth + (2 * x)) * 3; // Верхний левый пиксель
+            int index2 = index1 + 3; // Верхний правый пиксель
+            int index3 = index1 + originalWidth * 3; // Нижний левый пиксель
+            int index4 = index3 + 3; // Нижний правый пиксель
+
+            // Вычисляем среднее значение цветов четырех смежных пикселей
+            uint8_t averageR = (image.getData()[index1] + image.getData()[index2] +
+                                image.getData()[index3] + image.getData()[index4]) / 4;
+            uint8_t averageG = (image.getData()[index1 + 1] + image.getData()[index2 + 1] +
+                                image.getData()[index3 + 1] + image.getData()[index4 + 1]) / 4;
+            uint8_t averageB = (image.getData()[index1 + 2] + image.getData()[index2 + 2] +
+                                image.getData()[index3 + 2] + image.getData()[index4 + 2]) / 4;
+
+            // Добавляем среднее значение в вектор децимированного изображения
+            decimatedImageData.push_back(averageR);
+            decimatedImageData.push_back(averageG);
+            decimatedImageData.push_back(averageB);
+        }
+    }
+
+    // Обновляем заголовок BMP с новыми размерами изображения
+    image.setWidth(newWidth);
+    image.setHeight(newHeight);
+    image.setSize(newWidth * newHeight * 3); // 3 байта на пиксель (RGB)
+    image.setImageSize(image.getData().size() + sizeof(image.getInfoHeader()) + sizeof(image.getFileHeader()));
+
+    // Заменяем данные изображения на децимированные данные
+    image.setData(decimatedImageData);
+    image.saveImage("../data/decimationAvg.bmp", decimatedImageData);
 }

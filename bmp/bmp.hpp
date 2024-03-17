@@ -52,6 +52,25 @@ public:
     BMPInfoHeader getInfoHeader() {
         return infoHeader;
     }
+    std::vector<uint8_t> getPallete() {
+        return palette;
+    }
+    void setWidth(uint32_t width) {
+        infoHeader.bi_width = width;
+    }
+
+    void setHeight(uint32_t height) {
+        infoHeader.bi_height = height;
+    }
+    void setSize(uint32_t size) {
+        infoHeader.bi_size_image = size;
+    }
+    void setImageSize(uint32_t size) {
+        fileHeader.bf_size = size;
+    }
+    void setData(std::vector<uint8_t> data) {
+        imageData = data;
+    }
 private:
     uint8_t Sat(uint8_t x, uint8_t xmin, uint8_t xmax) {
         return (x < xmin) ? xmin : (x > xmax) ? xmax : x;

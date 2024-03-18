@@ -16,6 +16,8 @@ std::vector<uint8_t> decimationEven(bmp& image);
 void decimateImageEven(bmp& image, int num);
 void decimateImageAvg(bmp& image);
 void restoreImage(bmp& image, int num);
-double countProbability(bmp& image, char mod);
-
+std::map<int, double> countProbability(bmp& image, char mod);
+double calculateEntropy(bmp& image, char mod);
+std::vector<uint8_t> DPCM(bmp &image, char mod, char rule);
+int getComponent(char mod);
 #endif

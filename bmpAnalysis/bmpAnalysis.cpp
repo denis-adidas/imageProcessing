@@ -1,6 +1,6 @@
 #include "bmpAnalysis.hpp"
-
 #include <valarray>
+
 
 
 double expectedValue(bmp& image, char mod) {
@@ -142,20 +142,8 @@ double autoCorel(bmp &image, char mod, const size_t x, const size_t y) {
     auto H = image.getInfoHeader().bi_height;
     auto W = image.getInfoHeader().bi_width;
 
-    uint8_t bitShift;
-    switch (mod) {
-        case 'r':
-            bitShift = 0;
-        break;
-        case 'g':
-            bitShift = 1;
-        break;
-        case 'b':
-            bitShift = 2;
-        break;
-        default:
-            return 0.0;
-    }
+    uint8_t bitShift = getComponent(mod);
+
 
     double sum = 0;
 
@@ -227,20 +215,7 @@ double PSNR(bmp& srcImage, bmp& destImage, char mod) {
 
     const size_t bytesPerPixel = srcImage.getInfoHeader().bi_bit_count / 8;
 
-    uint8_t bitShift;
-    switch (mod) {
-        case 'r':
-            bitShift = 0;
-        break;
-        case 'g':
-            bitShift = 1;
-        break;
-        case 'b':
-            bitShift = 2;
-        break;
-        default:
-            return 0.0;
-    }
+    uint8_t bitShift = getComponent(mod);
 
     double sum {};
     for (int i = 0; i < srcImage.getInfoHeader().bi_height; ++i) {
@@ -249,7 +224,7 @@ double PSNR(bmp& srcImage, bmp& destImage, char mod) {
             sum += pow((srcImage.getData()[pixelOffset + bitShift] - destImage.getData()[pixelOffset + bitShift]), 2);
         }
     }
-    double result = 10 * std::log10(srcImage.getInfoHeader().bi_width * srcImage.getInfoHeader().bi_height * \
+    double result = 10 * std::log10(srcImage.getInfoHeader().bi_width * srcImage.getInfoHeader().bi_height *
         std::pow(std::pow(2, 8) - 1, 2) / sum);
     return result;
 
@@ -370,28 +345,87 @@ void restoreImage(bmp& image, int num) {
     image.saveImage("../data/restored.bmp", restoredImageData);
 }
 
-double countProbability(bmp& image, char mod) {
-    std::map<int, int> count_map;
+std::map<int, double> countProbability(bmp& image, char mod) {
+    std::map<int, int> countMap;
 
-    uint8_t bitShift;
-    switch (mod) {
-        case 'r':
-            bitShift = 0;
-            break;
-        case 'g':
-            bitShift = 1;
-            break;
-        case 'b':
-            bitShift = 2;
-            break;
-        default:
-            return 0.0;
-    }
+    int bitShift = getComponent(mod);
+
     for (int i {}; i < image.getInfoHeader().bi_height; ++i) {
         for (int j {}; j < image.getInfoHeader().bi_width; ++j) {
-            uint8_t pixelIntensity = image.getData()[(i * image.getInfoHeader().bi_width + j) * 3];
-            count_map[pixelIntensity]++;
+            int pixelIntensity = image.getData()[(i * image.getInfoHeader().bi_width + j) * 3 + bitShift];
+            countMap[pixelIntensity]++;
         }
     }
-    
+    std::map<int, double> probabilityMap;
+    int totalPixels = image.getInfoHeader().bi_height * image.getInfoHeader().bi_width;
+
+    for (const auto& it : countMap) {
+        probabilityMap[it.first] = static_cast<double>(it.second) / totalPixels;
+    }
+    return probabilityMap;
+}
+double calculateEntropy(bmp& image, char mod) {
+    auto probabilityMap = countProbability(image, mod);
+    double entropy {};
+
+    for (const auto& pair : probabilityMap) {
+        double p_x = pair.second;
+        if (p_x > 0) {
+            entropy -= p_x * log2(p_x);
+        }
+    }
+    return entropy;
+
+}
+std::vector<uint8_t> DPCM(bmp &image, char mod, char rule) {
+    std::vector<uint8_t> predictions;
+
+    int bitShift = getComponent(mod);
+
+    for (int i = 1; i < image.getInfoHeader().bi_height; ++i) {
+        for (int j = 1; j < image.getInfoHeader().bi_width; ++j) {
+            int pixelIntensity = image.getData()[(i * image.getInfoHeader().bi_width + j) * 3 + bitShift];
+            int fPixel {};
+            switch (rule) {
+                case 1:
+                    fPixel = image.getData()[(i * image.getInfoHeader().bi_width + j - 1) * 3 + bitShift];
+                    predictions.emplace_back(pixelIntensity - fPixel);
+                break;
+                case 2:
+                    fPixel = image.getData()[((i - 1) * image.getInfoHeader().bi_width + j) * 3 + bitShift];
+                    predictions.emplace_back(pixelIntensity - fPixel);
+                break;
+                case 3:
+                    fPixel = image.getData()[((i - 1) * image.getInfoHeader().bi_width + j - 1) * 3 + bitShift];
+                    predictions.emplace_back(pixelIntensity - fPixel);
+                break;
+                case 4:
+                    fPixel = image.getData()[((i - 1) * image.getInfoHeader().bi_width + j - 1) * 3 + bitShift] +
+                             image.getData()[((i - 1) * image.getInfoHeader().bi_width + j) * 3 + bitShift] +
+                             image.getData()[(i * image.getInfoHeader().bi_width + j - 1) * 3 + bitShift];
+                    predictions.emplace_back(pixelIntensity - static_cast<int>(fPixel / 3));
+                break;
+            }
+        }
+    }
+
+    return predictions;
+}
+
+
+
+int getComponent(char mod) {
+    int bitShift {};
+    switch (mod) {
+        case 'r':
+            bitShift = 2;
+        break;
+        case 'g':
+            bitShift = 1;
+        break;
+        case 'b':
+            bitShift = 0;
+        break;
+    }
+    return bitShift;
 }

@@ -4,6 +4,7 @@
 #include <vector>
 #include <math.h>
 #include <iostream>
+#include <map>
 #include "../bmp/bmp.hpp"
 
 double expectedValue(bmp& image, char mod);
@@ -14,5 +15,7 @@ double PSNR(bmp& srcImage, bmp& destImage, char mod);
 std::vector<uint8_t> decimationEven(bmp& image);
 void decimateImageEven(bmp& image, int num);
 void decimateImageAvg(bmp& image);
+void restoreImage(bmp& image, int num);
+double countProbability(bmp& image, char mod);
 
 #endif

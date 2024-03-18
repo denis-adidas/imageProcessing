@@ -169,6 +169,7 @@ void bmp::rotate(int rotateCount) {
 
     std::vector<uint8_t> tmp_data(imageData.size());
 
+
     for (int j = 0; j < width; ++j) {
         for (int i = height - 1; i >= 0; --i) {
             size_t newIndex = (j * height + (height - 1 - i)) * bytesPerPixel;

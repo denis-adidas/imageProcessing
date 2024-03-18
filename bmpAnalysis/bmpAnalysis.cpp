@@ -255,7 +255,7 @@ double PSNR(bmp& srcImage, bmp& destImage, char mod) {
 
 }
 
-void decimateImagEven(bmp& image, int num) {
+void decimateImageEven(bmp& image, int num) {
     int originalWidth = image.getInfoHeader().bi_width;
     int originalHeight = image.getInfoHeader().bi_height;
 
@@ -295,12 +295,12 @@ void decimateImageAvg(bmp& image) {
 
     for (int y = 0; y < newHeight; ++y) {
         for (int x = 0; x < newWidth; ++x) {
-            int index1 = ((2 * y) * originalWidth + (2 * x)) * 3; // Верхний левый пиксель
-            int index2 = index1 + 3; // Верхний правый пиксель
-            int index3 = index1 + originalWidth * 3; // Нижний левый пиксель
-            int index4 = index3 + 3; // Нижний правый пиксель
+            int index1 = ((2 * y) * originalWidth + (2 * x)) * 3; // left-up pixel
+            int index2 = index1 + 3; // right-up pixel
+            int index3 = index1 + originalWidth * 3; // left-bottom pixel
+            int index4 = index3 + 3; // left bottom pixel
 
-            // Вычисляем среднее значение цветов четырех смежных пикселей
+
             uint8_t averageR = (image.getData()[index1] + image.getData()[index2] +
                                 image.getData()[index3] + image.getData()[index4]) / 4;
             uint8_t averageG = (image.getData()[index1 + 1] + image.getData()[index2 + 1] +
@@ -308,20 +308,90 @@ void decimateImageAvg(bmp& image) {
             uint8_t averageB = (image.getData()[index1 + 2] + image.getData()[index2 + 2] +
                                 image.getData()[index3 + 2] + image.getData()[index4 + 2]) / 4;
 
-            // Добавляем среднее значение в вектор децимированного изображения
             decimatedImageData.push_back(averageR);
             decimatedImageData.push_back(averageG);
             decimatedImageData.push_back(averageB);
         }
     }
 
-    // Обновляем заголовок BMP с новыми размерами изображения
     image.setWidth(newWidth);
     image.setHeight(newHeight);
-    image.setSize(newWidth * newHeight * 3); // 3 байта на пиксель (RGB)
+    image.setSize(newWidth * newHeight * 3);
     image.setImageSize(image.getData().size() + sizeof(image.getInfoHeader()) + sizeof(image.getFileHeader()));
 
-    // Заменяем данные изображения на децимированные данные
     image.setData(decimatedImageData);
     image.saveImage("../data/decimationAvg.bmp", decimatedImageData);
+}
+
+void restoreImage(bmp& image, int num) {
+    int originalWidth = image.getInfoHeader().bi_width;
+    int originalHeight = image.getInfoHeader().bi_height;
+
+    int newWidth = originalWidth * num;
+    int newHeight = originalHeight * num;
+
+    std::vector<uint8_t> restoredImageData(newWidth * newHeight * 3);
+
+    auto decimatedImageData = image.getData();
+
+    for (int y = 0; y < newHeight; ++y) {
+        for (int x = 0; x < newWidth; ++x) {
+            int restoredIndex = (y * newWidth + x) * 3;
+
+            // Если индекс четный
+            if ((x % 2 == 0 && y % 2 == 0) || (x % 2 != 0 && y % 2 != 0)) {
+                // Копируем значение пикселя из исходного изображения
+                int originalX = x / num;
+                int originalY = y / num;
+                int originalIndex = (originalY * originalWidth + originalX) * 3;
+                restoredImageData[restoredIndex] = decimatedImageData[originalIndex];
+                restoredImageData[restoredIndex + 1] = decimatedImageData[originalIndex + 1];
+                restoredImageData[restoredIndex + 2] = decimatedImageData[originalIndex + 2];
+            }
+                // Иначе, если индекс нечетный
+            else {
+                // Копируем значение пикселя из нового изображения
+                // Предполагаем, что пиксели слева и сверху уже скопированы
+                // (т.е. значение уже присутствует в restoredImageData)
+                // Копируем значение соседнего пикселя
+                restoredImageData[restoredIndex] = restoredImageData[restoredIndex];
+                restoredImageData[restoredIndex + 1] = restoredImageData[restoredIndex + 1];
+                restoredImageData[restoredIndex + 2] = restoredImageData[restoredIndex + 2];
+            }
+        }
+    }
+
+    image.setWidth(newWidth);
+    image.setHeight(newHeight);
+    image.setSize(newWidth * newHeight * 3);
+    image.setImageSize(image.getFileHeader().bf_size - image.getInfoHeader().bi_size_image + image.getInfoHeader().bi_size_image);
+
+    image.setData(restoredImageData);
+    image.saveImage("../data/restored.bmp", restoredImageData);
+}
+
+double countProbability(bmp& image, char mod) {
+    std::map<int, int> count_map;
+
+    uint8_t bitShift;
+    switch (mod) {
+        case 'r':
+            bitShift = 0;
+            break;
+        case 'g':
+            bitShift = 1;
+            break;
+        case 'b':
+            bitShift = 2;
+            break;
+        default:
+            return 0.0;
+    }
+    for (int i {}; i < image.getInfoHeader().bi_height; ++i) {
+        for (int j {}; j < image.getInfoHeader().bi_width; ++j) {
+            uint8_t pixelIntensity = image.getData()[(i * image.getInfoHeader().bi_width + j) * 3];
+            count_map[pixelIntensity]++;
+        }
+    }
+    
 }

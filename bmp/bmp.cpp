@@ -58,28 +58,37 @@ std::vector<uint8_t> bmp::convertRGBtoYCbCr()   {
         CbData.reserve(imageData.size());
         CrData.reserve(imageData.size());
 
-        for (size_t i = 0; i < imageData.size(); i += 3) {
-            uint8_t r = imageData[i];
+        for (size_t i {}; i < imageData.size(); i += 3) {
+            uint8_t r = imageData[i + 2];
             uint8_t g = imageData[i + 1];
-            uint8_t b = imageData[i + 2];
+            uint8_t b = imageData[i];
 
 
-            uint8_t y = static_cast<uint8_t>(0.299 * r + 0.587 * g + 0.114 * b);
-            uint8_t cb = static_cast<uint8_t>(0.5643 * (b - y) + 128);
-            uint8_t cr = static_cast<uint8_t>(0.7132 * (r - y) + 128);
+            int y = static_cast<int>(0.299 * r + 0.587 * g + 0.114 * b);
+            int cb = static_cast<int>(0.5643 * (b - y) + 128);
+            int cr = static_cast<int>(0.7132 * (r - y) + 128);
+
+            y = std::min(std::max(y, 0), 255);
+            cb = std::min(std::max(cb, 0), 255);
+            cr = std::min(std::max(cr, 0), 255);
 
 
             YData.emplace_back(y);
             YData.emplace_back(y);
             YData.emplace_back(y);
+
+
+            CbData.emplace_back(cb);
+            CbData.emplace_back(cb);
+            CbData.emplace_back(cb);
+
+
+            CrData.emplace_back(cr);
+            CrData.emplace_back(cr);
+            CrData.emplace_back(cr);
+
             ycbcrData.emplace_back(y);
-            CbData.emplace_back(cb);
-            CbData.emplace_back(cb);
-            CbData.emplace_back(cb);
             ycbcrData.emplace_back(cb);
-            CrData.emplace_back(cr);
-            CrData.emplace_back(cr);
-            CrData.emplace_back(cr);
             ycbcrData.emplace_back(cr);
         }
 
@@ -93,21 +102,26 @@ std::vector<uint8_t> bmp::convertYCbCrtoRGB(const std::vector<uint8_t>& data) {
     std::vector<uint8_t> RGBImage;
     RGBImage.reserve(data.size());
 
-    for (size_t i {}; i < RGBImage.size(); ++i) {
+    for (size_t i {}; i < data.size(); i += 3) {
         uint8_t Y = data[i];
         uint8_t Cb = data[i + 1];
         uint8_t Cr = data[i + 2];
 
-        uint8_t b = static_cast<uint8_t>(Sat((Y + 1.772 * (Cb - 128)), 0, 255));
-        uint8_t r = static_cast<uint8_t>(Sat((Y + 1.402 * (Cr - 128)), 0, 255));
-        uint8_t g = static_cast<uint8_t>(Sat((Y - 0.714 * (Cr - 128) - 0.334 * (Cb - 128)), 0, 255));
+        int r = static_cast<int>(Y + 1.402 * (Cr - 128));
+        int g = static_cast<int>(Y - 0.344 * (Cb - 128) - 0.714 * (Cr - 128));
+        int b = static_cast<int>(Y + 1.772 * (Cb - 128));
 
-        RGBImage.emplace_back(r);
-        RGBImage.emplace_back(g);
-        RGBImage.emplace_back(b);
+        r = std::min(std::max(r, 0), 255);
+        g = std::min(std::max(g, 0), 255);
+        b = std::min(std::max(b, 0), 255);
+
+        RGBImage.push_back(b);
+        RGBImage.push_back(g);
+        RGBImage.push_back(r);
     }
-    saveImage("../data/restoreImage.bmp", data);
-    return data;
+
+    saveImage("../data/restoreImage.bmp", RGBImage);
+    return RGBImage;
 }
 
 
@@ -158,7 +172,7 @@ std::vector<uint8_t> bmp::saveFileByComponent(const char &mod) {
             break;
     }
 
-    saveImage("../data/image_by_" + std::string(1, mod) + "_component.bmp", tmp_data);
+    saveImage("../data2/image_by_" + std::string(1, mod) + "_component.bmp", tmp_data);
     return tmp_data;
 }
 

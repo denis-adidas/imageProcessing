@@ -218,8 +218,8 @@ double PSNR(bmp& srcImage, bmp& destImage, char mod) {
     uint8_t bitShift = getComponent(mod);
 
     double sum {};
-    for (int i = 0; i < srcImage.getInfoHeader().bi_height; ++i) {
-        for (int j = 0; j < srcImage.getInfoHeader().bi_width; ++j) {
+    for (int i = 1; i < srcImage.getInfoHeader().bi_height; ++i) {
+        for (int j = 1; j < srcImage.getInfoHeader().bi_width; ++j) {
             size_t pixelOffset = (i * srcImage.getInfoHeader().bi_width + j) * bytesPerPixel;
             sum += pow((srcImage.getData()[pixelOffset + bitShift] - destImage.getData()[pixelOffset + bitShift]), 2);
         }
@@ -312,37 +312,36 @@ void restoreImage(bmp& image, int num) {
     for (int y = 0; y < newHeight; ++y) {
         for (int x = 0; x < newWidth; ++x) {
             int restoredIndex = (y * newWidth + x) * 3;
-
-            // Если индекс четный
             if ((x % 2 == 0 && y % 2 == 0) || (x % 2 != 0 && y % 2 != 0)) {
-                // Копируем значение пикселя из исходного изображения
                 int originalX = x / num;
                 int originalY = y / num;
                 int originalIndex = (originalY * originalWidth + originalX) * 3;
                 restoredImageData[restoredIndex] = decimatedImageData[originalIndex];
                 restoredImageData[restoredIndex + 1] = decimatedImageData[originalIndex + 1];
                 restoredImageData[restoredIndex + 2] = decimatedImageData[originalIndex + 2];
-            }
-                // Иначе, если индекс нечетный
-            else {
-                // Копируем значение пикселя из нового изображения
-                // Предполагаем, что пиксели слева и сверху уже скопированы
-                // (т.е. значение уже присутствует в restoredImageData)
-                // Копируем значение соседнего пикселя
-                restoredImageData[restoredIndex] = restoredImageData[restoredIndex];
-                restoredImageData[restoredIndex + 1] = restoredImageData[restoredIndex + 1];
-                restoredImageData[restoredIndex + 2] = restoredImageData[restoredIndex + 2];
+            } else {
+                if (x > 0) {
+                    int neighborIndex = ((y * newWidth) + (x - 1)) * 3;
+                    restoredImageData[restoredIndex] = restoredImageData[neighborIndex];
+                    restoredImageData[restoredIndex + 1] = restoredImageData[neighborIndex + 1];
+                    restoredImageData[restoredIndex + 2] = restoredImageData[neighborIndex + 2];
+                } else if (y > 0) {
+                    int neighborIndex = (((y - 1) * newWidth) + x) * 3;
+                    restoredImageData[restoredIndex] = restoredImageData[neighborIndex];
+                    restoredImageData[restoredIndex + 1] = restoredImageData[neighborIndex + 1];
+                    restoredImageData[restoredIndex + 2] = restoredImageData[neighborIndex + 2];
+                }
             }
         }
     }
 
     image.setWidth(newWidth);
     image.setHeight(newHeight);
-    image.setSize(newWidth * newHeight * 3);
-    image.setImageSize(image.getFileHeader().bf_size - image.getInfoHeader().bi_size_image + image.getInfoHeader().bi_size_image);
+    image.setSize(restoredImageData.size());
+    image.setImageSize(restoredImageData.size() + image.getFileHeader().bf_off_bits);
 
-    image.setData(restoredImageData);
-    image.saveImage("../data/restored.bmp", restoredImageData);
+    image.setData(decimatedImageData);
+    image.saveImage("../data/restored.bmp", decimatedImageData);
 }
 
 std::map<int, double> countProbability(bmp& image, char mod) {
